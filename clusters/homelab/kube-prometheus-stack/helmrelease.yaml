@@ -48,3 +48,4 @@ spec:
           - name: discord
             discord_configs:
               - webhook_url: ${DISCORD_WEBHOOK_URL}
+          - name: "null"

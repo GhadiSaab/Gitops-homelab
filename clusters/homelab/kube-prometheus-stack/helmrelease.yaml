@@ -35,3 +35,6 @@ spec:
       service:
         type: NodePort
         nodePort: 32000
+    alertmanager:
+      alertmanager:
+        configSecret: alertmanager-discord

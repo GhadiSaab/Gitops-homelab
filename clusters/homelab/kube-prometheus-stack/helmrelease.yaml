@@ -35,7 +35,7 @@ spec:
       service:
         type: NodePort
         nodePort: 32000
-  alertmanager:
+    alertmanager:
     stringConfig: |
       global:
         resolve_timeout: 5m

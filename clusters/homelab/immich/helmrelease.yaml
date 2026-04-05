@@ -1,0 +1,113 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  chart:
+    spec:
+      chart: immich
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: OCIRepository
+        name: immich
+      version: 0.11.1
+  interval: 1m0s
+  values:
+    controllers:
+      main:
+        containers:
+          main:
+            env:
+              DB_DATABASE_NAME:
+                valueFrom:
+                  secretKeyRef:
+                    key: dbname
+                    name: immich-database-app
+              DB_HOSTNAME:
+                valueFrom:
+                  secretKeyRef:
+                    key: host
+                    name: immich-database-app
+              DB_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    key: password
+                    name: immich-database-app
+              DB_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    key: username
+                    name: immich-database-app
+              DB_VECTOR_EXTENSION: vectorchord
+              IMMICH_MACHINE_LEARNING_URL: '{{ printf "http://%s-machine-learning:3003"
+                .Release.Name }}'
+              REDIS_HOSTNAME: '{{ printf "%s-valkey" .Release.Name }}'
+            image:
+              tag: v2.6.3
+    immich:
+      configuration: {}
+      configurationKind: ConfigMap
+      metrics:
+        enabled: true
+      persistence:
+        library:
+          existingClaim: immich-library
+    machine-learning:
+      controllers:
+        main:
+          containers:
+            main:
+              env:
+                HF_XET_CACHE: /cache/huggingface-xet
+                MPLCONFIGDIR: /cache/matplotlib-config
+                TRANSFORMERS_CACHE: /cache
+              image:
+                pullPolicy: IfNotPresent
+                repository: ghcr.io/immich-app/immich-machine-learning
+      enabled: true
+      persistence:
+        cache:
+          enabled: true
+          existingClaim: immich-library
+          globalMounts:
+          - path: /cache
+            subPath: ml-cache
+    server:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                pullPolicy: IfNotPresent
+                repository: ghcr.io/immich-app/immich-server
+      enabled: true
+      ingress:
+        main:
+          annotations:
+            nginx.ingress.kubernetes.io/proxy-body-size: "0"
+          enabled: false
+          hosts:
+          - host: immich.local
+            paths:
+            - path: /
+              service:
+                identifier: main
+          tls: []
+    valkey:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                pullPolicy: IfNotPresent
+                repository: docker.io/valkey/valkey
+                tag: 9.1-alpine@sha256:355ae2c6c965769a0d9b9810711e6befd5b79fe676d1faa848247733ad6a4408
+      enabled: true
+      persistence:
+        data:
+          accessMode: ReadWriteOnce
+          enabled: true
+          size: 1Gi
+          type: emptyDir

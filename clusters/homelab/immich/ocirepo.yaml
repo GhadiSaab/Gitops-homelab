@@ -9,4 +9,4 @@ spec:
   provider: generic
   ref:
     semver: '>=0.1.0'
-  url: oci://ghcr.io/immich-app/immich-charts
+  url: oci://ghcr.io/immich-app/immich-charts/immich

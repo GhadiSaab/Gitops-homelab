@@ -11,6 +11,6 @@ data:
     datasources:
       - name: Loki
         type: loki
-        url: http://loki-gateway.loki.svc.cluster.local:80
+        url: http://loki.loki.svc.cluster.local:3100
         access: proxy
         isDefault: false

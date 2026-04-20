@@ -36,6 +36,12 @@ spec:
         KubeSchedulerDown: true
         KubeControllerManagerDown: true
         KubeProxyDown: true
+    kubeScheduler:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeProxy:
+      enabled: false
     grafana:
       admin:
         existingSecret: grafana-admin-secret

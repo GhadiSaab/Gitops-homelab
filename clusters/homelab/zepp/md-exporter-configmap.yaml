@@ -78,9 +78,14 @@ data:
       |> sort(columns: ["_time"], desc: true)
     '''
         lines = ["# Steps & Activity\n\n", "| Date | Steps | Distance (m) | Calories |\n", "|------|-------|--------------|----------|\n"]
+        seen = set()
         for table in run_query(client, flux):
             for r in table.records:
-                lines.append(f"| {fmt_date(r.get_time())} | {int(r.values.get('total_steps',0)):,} | {int(r.values.get('distance_m',0)):,} | {int(r.values.get('calories',0))} |\n")
+                d = fmt_date(r.get_time())
+                if d in seen:
+                    continue
+                seen.add(d)
+                lines.append(f"| {d} | {int(r.values.get('total_steps',0)):,} | {int(r.values.get('distance_m',0)):,} | {int(r.values.get('calories',0))} |\n")
         write_md("steps.md", "".join(lines))
 
     def export_sleep(client):
@@ -107,9 +112,13 @@ data:
                 awake_by_day[fmt_date(r.get_time())] = int(r.get_value())
 
         lines = ["# Sleep\n\n", "| Date | Total Sleep | Deep Sleep | Light Sleep |\n", "|------|-------------|------------|-------------|\n"]
+        seen = set()
         for table in run_query(client, flux_summary):
             for r in table.records:
                 date  = fmt_date(r.get_time())
+                if date in seen:
+                    continue
+                seen.add(date)
                 total = "N/A"
                 try:
                     fmt_str = "%Y-%m-%d %H:%M:%S"
@@ -135,9 +144,14 @@ data:
       |> sort(columns: ["_time"], desc: true)
     '''
         lines = ["# Stress\n\n", "| Date | Avg Stress | Min Stress | Max Stress |\n", "|------|------------|------------|------------|\n"]
+        seen = set()
         for table in run_query(client, flux):
             for r in table.records:
-                lines.append(f"| {fmt_date(r.get_time())} | {r.values.get('mean_stress_level','N/A')} | {r.values.get('minimum_stress_level','N/A')} | {r.values.get('max_stress_level','N/A')} |\n")
+                d = fmt_date(r.get_time())
+                if d in seen:
+                    continue
+                seen.add(d)
+                lines.append(f"| {d} | {r.values.get('mean_stress_level','N/A')} | {r.values.get('minimum_stress_level','N/A')} | {r.values.get('max_stress_level','N/A')} |\n")
         write_md("stress.md", "".join(lines))
 
     def export_blood_oxygen(client):
@@ -164,9 +178,14 @@ data:
       |> sort(columns: ["_time"], desc: true)
     '''
         lines = ["# Personal Activity Intelligence (PAI)\n\n", "| Date | Daily PAI | Total PAI |\n", "|------|-----------|-----------|\n"]
+        seen = set()
         for table in run_query(client, flux):
             for r in table.records:
-                lines.append(f"| {fmt_date(r.get_time())} | {round(r.values.get('pai_score',0),1)} | {round(r.values.get('total_pai',0),1)} |\n")
+                d = fmt_date(r.get_time())
+                if d in seen:
+                    continue
+                seen.add(d)
+                lines.append(f"| {d} | {round(r.values.get('pai_score',0),1)} | {round(r.values.get('total_pai',0),1)} |\n")
         write_md("pai.md", "".join(lines))
 
     def export_activities(client):

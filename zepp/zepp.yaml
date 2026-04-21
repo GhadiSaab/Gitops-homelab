@@ -20,7 +20,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: zepp-exporter
-              image: bentasker12/zepp_to_influxdb:0.5.0
+              image: ghcr.io/ghadisaab/zepp_to_influxdb:b301f57
               envFrom:
                 - secretRef:
                     name: zepp-secrets

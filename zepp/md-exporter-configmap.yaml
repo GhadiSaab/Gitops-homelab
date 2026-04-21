@@ -229,6 +229,39 @@ data:
             lines.append(f"| {d} | {fmt_act('fast_walking')} | {fmt_act('slow_walking')} | {fmt_act('light_activity')} | {total_min} |\n")
         write_md("activities.md", "".join(lines))
 
+    def export_readiness(client):
+        flux = f'''
+    from(bucket: "{BUCKET}")
+      |> range(start: {RANGE})
+      |> filter(fn: (r) => r._measurement == "{MEASUREMENT}" and r.readiness_type == "watch_score")
+      |> filter(fn: (r) => r._field == "readiness_score" or r._field == "sleep_hrv_ms" or r._field == "hrv_score" or r._field == "sleep_rhr" or r._field == "rhr_score" or r._field == "ahi_score")
+      |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+      |> sort(columns: ["_time"], desc: true)
+    '''
+        lines = [
+            "# Readiness & HRV\n\n",
+            "| Date | Readiness | HRV (ms) | HRV Score | Sleep RHR | RHR Score | AHI Score |\n",
+            "|------|-----------|----------|-----------|-----------|-----------|----------|\n",
+        ]
+        seen = set()
+        for table in run_query(client, flux):
+            for r in table.records:
+                d = fmt_date(r.get_time())
+                if d in seen:
+                    continue
+                seen.add(d)
+                v = r.values
+                lines.append(
+                    f"| {d} "
+                    f"| {v.get('readiness_score','N/A')} "
+                    f"| {v.get('sleep_hrv_ms','N/A')} "
+                    f"| {v.get('hrv_score','N/A')} "
+                    f"| {v.get('sleep_rhr','N/A')} "
+                    f"| {v.get('rhr_score','N/A')} "
+                    f"| {v.get('ahi_score','N/A')} |\n"
+                )
+        write_md("readiness.md", "".join(lines))
+
     if __name__ == "__main__":
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         with InfluxDBClient(url=URL, token=TOKEN, org=ORG) as client:
@@ -239,4 +272,5 @@ data:
             print("Exporting blood oxygen..."); export_blood_oxygen(client)
             print("Exporting PAI...");        export_pai(client)
             print("Exporting activities..."); export_activities(client)
+            print("Exporting readiness/HRV..."); export_readiness(client)
         print("Done.")

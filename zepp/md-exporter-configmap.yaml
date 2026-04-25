@@ -222,7 +222,7 @@ data:
         seen = set()
         for table in run_query(client, flux):
             for r in table.records:
-                d = fmt_date(r.get_time())
+                d = fmt_readiness_date(r.get_time())
                 if d in seen:
                     continue
                 seen.add(d)

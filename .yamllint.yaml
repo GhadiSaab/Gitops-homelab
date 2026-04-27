@@ -1,0 +1,13 @@
+extends: default
+ignore: |
+  flux-system/gotk-components.yaml
+rules:
+  document-start: disable
+  line-length: disable
+  indentation:
+    spaces: 2
+    indent-sequences: whatever
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+  comments:
+    min-spaces-from-content: 1

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "minimumReleaseAge": "3 days",
+  "addLabels": ["dependencies"],
+  "flux": {
+    "managerFilePatterns": ["/\\.yaml$/"]
+  },
+  "helm-values": {
+    "managerFilePatterns": ["/\\.yaml$/"]
+  },
+  "packageRules": [
+    {
+      "description": "Group Helm chart updates",
+      "matchManagers": ["flux"],
+      "matchDatasources": ["helm"],
+      "groupName": "helm charts",
+      "automerge": false
+    },
+    {
+      "description": "Require manual merge for all updates",
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "automerge": false
+    },
+    {
+      "description": "Automerge GitHub Actions digest/patch updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest", "patch"],
+      "automerge": true,
+      "platformAutomerge": true
+    }
+  ]
+}

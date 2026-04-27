@@ -1,0 +1,39 @@
+name: flux-diff
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@v2.4.0
+
+      - name: Setup kustomize
+        uses: fluxcd/pkg/actions/kustomize@main
+
+      - name: Diff kustomizations
+        uses: allenporter/flux-local/action/diff@8.2.0
+        id: diff
+        with:
+          live-branch: main
+          path: "."
+          resource: kustomization
+
+      - name: Post diff comment
+        uses: mshick/add-pr-comment@v2
+        if: ${{ steps.diff.outputs.diff != '' }}
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          message: |
+            ## Flux diff
+
+            ```diff
+            ${{ steps.diff.outputs.diff }}
+            ```

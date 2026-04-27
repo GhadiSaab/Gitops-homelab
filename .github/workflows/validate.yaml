@@ -1,0 +1,53 @@
+name: validate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint YAML
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_file: .yamllint.yaml
+          file_or_dir: .
+          strict: true
+
+      - name: Setup kustomize
+        uses: fluxcd/pkg/actions/kustomize@main
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL \
+            "https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz" \
+            | tar xz -C /usr/local/bin
+
+      - name: Download Flux CRD schemas
+        run: |
+          mkdir -p /tmp/flux-crd-schemas/master-standalone-strict
+          curl -sSL \
+            "https://github.com/fluxcd/flux2/releases/latest/download/crd-schemas.tar.gz" \
+            | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
+
+      - name: Validate manifests
+        run: |
+          find . -name kustomization.yaml -not -path './.git/*' \
+            | while read -r f; do
+                dir="$(dirname "$f")"
+                echo "--- Validating $dir ---"
+                kustomize build "$dir" \
+                  | kubeconform \
+                      -strict \
+                      -skip Secret,SealedSecret \
+                      -schema-location default \
+                      -schema-location /tmp/flux-crd-schemas \
+                      -summary \
+                      -output pretty
+              done

@@ -1,0 +1,34 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: holmesgpt
+  namespace: holmesgpt
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: holmes
+      sourceRef:
+        kind: HelmRepository
+        name: robusta
+        namespace: holmesgpt
+  values:
+    additionalEnvVars:
+      - name: GEMINI_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: holmesgpt-secrets
+            key: gemini-api-key
+    modelList:
+      gemma-4-31b:
+        api_key: "{{ env.GEMINI_API_KEY }}"
+        model: gemini/gemma-4-31b-it
+    toolsets:
+      prometheus/metrics:
+        enabled: true
+        config:
+          prometheus_url: http://kube-prometheus-stack-prometheus.monitoring-ns.svc.cluster.local:9090
+      loki/logs:
+        enabled: true
+        config:
+          loki_url: http://loki.loki.svc.cluster.local:3100

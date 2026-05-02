@@ -47,7 +47,8 @@ BOT_HEADERS = {
 REACT_YES = '✅'
 REACT_NO  = '❌'
 
-processed: set[str] = set()
+# fingerprint → alertname, tracks what we've already posted so we can send resolved notices
+processed: dict[str, str] = {}
 last_firing: set[str] = set()
 
 
@@ -222,6 +223,22 @@ def watch_reaction(alert: dict, analysis: str, msg_id: str) -> None:
 
 # ---------- Discord webhook fallback (kept for initial posting if bot fails) ----------
 
+def post_resolved(alert_name: str) -> None:
+    embed = {
+        'title': f'✅ RESOLVED: {alert_name}',
+        'description': f'Alert **{alert_name}** is no longer firing.',
+        'color': 0x2ECC71,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'footer': {'text': 'via HolmesGPT bridge'},
+    }
+    requests.post(
+        f'{DISCORD_API}/channels/{DISCORD_CHANNEL_ID}/messages',
+        headers=BOT_HEADERS,
+        json={'embeds': [embed]},
+        timeout=10,
+    )
+
+
 def post_webhook_fallback(alert: dict, analysis: str) -> None:
     name = alert['labels'].get('alertname', 'Unknown')
     severity = alert['labels'].get('severity', 'info').lower()
@@ -279,7 +296,13 @@ def poll() -> None:
     resolved = last_firing - current
     if resolved:
         log.info('Resolved fingerprints cleared from dedup: %s', resolved)
-        processed.difference_update(resolved)
+        for fp in resolved:
+            alert_name = processed.pop(fp, None)
+            if alert_name and alert_name not in IGNORED_ALERTS:
+                try:
+                    post_resolved(alert_name)
+                except Exception as exc:
+                    log.error('Failed to post resolved notice for %s: %s', alert_name, exc)
     last_firing = current
 
     new_alerts = [
@@ -290,7 +313,7 @@ def poll() -> None:
     log.info('Poll complete: %d firing, %d new', len(alerts), len(new_alerts))
 
     for alert in new_alerts:
-        processed.add(alert['fingerprint'])
+        processed[alert['fingerprint']] = alert['labels'].get('alertname', 'Unknown')
         process_alert(alert)
 
 

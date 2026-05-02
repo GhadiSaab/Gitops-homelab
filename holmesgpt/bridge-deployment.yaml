@@ -44,7 +44,7 @@ spec:
         - name: POLL_INTERVAL
           value: "60"
         - name: REACTION_TIMEOUT
-          value: "300"
+          value: "1800"
         resources:
           requests:
             cpu: 50m

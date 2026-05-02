@@ -24,6 +24,8 @@ spec:
         api_key: "{{ env.GEMINI_API_KEY }}"
         model: gemini/gemma-4-31b-it
         rpm: 10
+        num_retries: 5
+        retry_after: 30
     toolsets:
       prometheus/metrics:
         enabled: true

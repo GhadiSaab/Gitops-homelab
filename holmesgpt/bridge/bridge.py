@@ -50,6 +50,9 @@ REACT_NO  = '❌'
 # fingerprint → alertname, tracks what we've already posted so we can send resolved notices
 processed: dict[str, str] = {}
 last_firing: set[str] = set()
+# alertname → epoch when we last investigated it; prevents re-investigating flapping alerts
+investigation_timestamps: dict[str, float] = {}
+REINVESTIGATE_COOLDOWN = int(os.environ.get('REINVESTIGATE_COOLDOWN', '1800'))
 
 
 # ---------- Alertmanager ----------
@@ -305,15 +308,27 @@ def poll() -> None:
                     log.error('Failed to post resolved notice for %s: %s', alert_name, exc)
     last_firing = current
 
-    new_alerts = [
-        a for a in alerts
-        if a['fingerprint'] not in processed
-        and a['labels'].get('alertname') not in IGNORED_ALERTS
-    ]
+    # Build candidate list: one per alertname, respecting cooldown.
+    # Iterative (not list comprehension) so seen_names updates as we go,
+    # preventing two fingerprints for the same alertname slipping through in one batch.
+    now = time.time()
+    seen_names: set[str] = set(processed.values())
+    new_alerts: list[dict] = []
+    for a in alerts:
+        name = a['labels'].get('alertname', 'Unknown')
+        if (a['fingerprint'] not in processed
+                and name not in IGNORED_ALERTS
+                and name not in seen_names
+                and now - investigation_timestamps.get(name, 0) >= REINVESTIGATE_COOLDOWN):
+            new_alerts.append(a)
+            seen_names.add(name)
+
     log.info('Poll complete: %d firing, %d new', len(alerts), len(new_alerts))
 
     for alert in new_alerts:
-        processed[alert['fingerprint']] = alert['labels'].get('alertname', 'Unknown')
+        name = alert['labels'].get('alertname', 'Unknown')
+        processed[alert['fingerprint']] = name
+        investigation_timestamps[name] = time.time()
         process_alert(alert)
 
 

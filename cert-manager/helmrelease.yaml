@@ -7,7 +7,7 @@ spec:
   interval: 1h
   dependsOn:
     - name: sealed-secrets
-      namespace: sealed-secrets
+      namespace: flux-system
   chart:
     spec:
       chart: cert-manager

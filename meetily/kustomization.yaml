@@ -8,3 +8,4 @@ resources:
   - service.yaml
   - certificate.yaml
   - ingressroute.yaml
+  - transcript-processor-patch.yaml

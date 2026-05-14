@@ -41,6 +41,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: transcript-processor-patch
+              mountPath: /app/transcript_processor.py
+              subPath: transcript_processor.py
           resources:
             requests:
               cpu: 100m
@@ -54,6 +57,9 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: meetily-data
+        - name: transcript-processor-patch
+          configMap:
+            name: meetily-transcript-processor
 ---
 apiVersion: apps/v1
 kind: Deployment
